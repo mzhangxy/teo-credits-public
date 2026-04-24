@@ -8,10 +8,18 @@ on:
 jobs:
   run-automation:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - name: 检出代码
+      - name: 📥 下载私库脚本
         uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/teo-credits-Private
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: private
+
+      - name: 📂 移动脚本到工作目录
+        run: mv private/credits_claimer.py credits_claimer.py
 
       - name: 设置 Python
         uses: actions/setup-python@v5
