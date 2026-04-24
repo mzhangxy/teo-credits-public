@@ -1,4 +1,4 @@
-name: Get Teoheberg Cookie (WARP + Buster)
+name: Credits Teoheberg (Buster)
 
 on:
   workflow_dispatch: # 允许手动点击触发
