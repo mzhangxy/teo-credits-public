@@ -91,7 +91,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT }} 
         run: |
           # 使用 gh 命令行工具自动把环境变量里的 NEW_COOKIE 覆盖到仓库的 SAVED_COOKIE 中
-          gh secret set SAVED_COOKIE --body "$NEW_COOKIE" --repo ${{ mzhangxy/teo-credits-public }}
+          gh secret set SAVED_COOKIE --body "$NEW_COOKIE" --repo ${{ github.repository }}
           echo "✅ Secret 'SAVED_COOKIE' 已自动更新完毕！下次运行将使用最新 Cookie！"
 
       - name: 上传结果
