@@ -2,8 +2,8 @@ name: Get Teoheberg Cookie (WARP + Buster)
 
 on:
   workflow_dispatch: # 允许手动点击触发
-  # schedule:
-  #   - cron: '0 2 * * *' # (可选) 每天 UTC 时间 2:00（北京时间早上 10:00）自动运行。
+  schedule:
+    - cron: '0 4 * * *' # (可选) 每天 UTC 时间 2:00（北京时间早上 10:00）自动运行。
 
 jobs:
   run-automation:
