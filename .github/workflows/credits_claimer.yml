@@ -1,0 +1,96 @@
+name: Get Teoheberg Cookie (WARP + Buster)
+
+on:
+  workflow_dispatch: # 允许手动点击触发
+  # schedule:
+  #   - cron: '0 2 * * *' # (可选) 每天 UTC 时间 2:00（北京时间早上 10:00）自动运行。
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 安装系统依赖 (Xvfb + WARP + 7z)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable x11-apps p7zip-full
+          
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-warp.list
+          sudo apt-get update && sudo apt-get install -y cloudflare-warp
+
+      - name: 启动 WARP 并连接
+        run: |
+          sudo warp-cli --accept-tos registration new
+          sudo warp-cli --accept-tos mode proxy
+          sudo warp-cli --accept-tos connect
+          sleep 5
+
+      # =========================
+      # 🟡 调试 IP (验证 WARP 是否生效)
+      # =========================
+      - name: Check IP
+        run: |
+          echo "🌍 当前公网 IP:"
+          curl -s https://api.ipify.org
+          echo -e "\n🌍 代理模式下的 IP (WARP):"
+          curl -x socks5://127.0.0.1:40000 -s https://ipinfo.io
+
+      # =========================
+      # 📦 下载并解压 Buster
+      # =========================
+      - name: Download and Unzip Buster
+        run: |
+          mkdir -p extensions/buster
+          # 加上 -q (安静模式) 和 --show-progress 让日志好看点
+          wget -q --show-progress -O extensions/buster/buster.zip https://github.com/dessant/buster/releases/download/v3.1.0/buster_captcha_solver_for_humans-3.1.0-chrome.zip
+          
+          mkdir -p extensions/buster/unpacked
+          7z x -y extensions/buster/buster.zip -oextensions/buster/unpacked > /dev/null
+          
+          echo "✅ Buster 解压完成"
+          # 检查有没有解压出 manifest.json 证明是否成功
+          ls -l extensions/buster/unpacked/manifest.json
+
+      - name: 安装 Python 库
+        run: pip install DrissionPage requests
+
+      - name: 执行登录脚本
+        env:
+          EMAIL: ${{ secrets.EMAIL }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+          SAVED_COOKIE: ${{ secrets.SAVED_COOKIE }}
+          PROXY_SERVER: socks5://127.0.0.1:40000
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: xvfb-run python credits_claimer.py
+
+      # =========================
+      # 🌟 自动更新 Secret 步骤
+      # =========================
+      - name: 自动更新 GitHub Secret (SAVED_COOKIE)
+        # 只有当 Python 脚本检测到变化并写入 UPDATE_SECRET=true 时才会触发
+        if: env.UPDATE_SECRET == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }} 
+        run: |
+          # 使用 gh 命令行工具自动把环境变量里的 NEW_COOKIE 覆盖到仓库的 SAVED_COOKIE 中
+          gh secret set SAVED_COOKIE --body "$NEW_COOKIE"
+          echo "✅ Secret 'SAVED_COOKIE' 已自动更新完毕！下次运行将使用最新 Cookie！"
+
+      - name: 上传结果
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: login-results
+          path: |
+            teoheberg_cookies.json
+            *.png
