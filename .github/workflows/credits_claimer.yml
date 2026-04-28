@@ -3,7 +3,7 @@ name: Credits Teoheberg (Buster)
 on:
   workflow_dispatch: # 允许手动点击触发
   schedule:
-    - cron: '19 11 * * *' # (可选) 
+    - cron: '19 12 * * *' # (可选) 
 
 jobs:
   run-automation:
